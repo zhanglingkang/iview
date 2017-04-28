@@ -3,6 +3,7 @@
         <template v-if="type !== 'textarea'">
             <div :class="[prefixCls + '-group-prepend']" v-if="prepend" v-show="slotReady" v-el:prepend><slot name="prepend"></slot></div>
             <i class="ivu-icon" :class="['ivu-icon-' + icon, prefixCls + '-icon']" v-if="icon" @click="handleIconClick"></i>
+            <i class="ivu-icon ivu-icon-load-c ivu-load-loop" :class="[prefixCls + '-icon', prefixCls + '-icon-validate']" v-else transition="fade"></i>
             <input
                 :type="type"
                 :class="inputClasses"
@@ -12,9 +13,11 @@
                 :readonly="readonly"
                 :name="name"
                 v-model="value"
+                :number="number"
                 @keyup.enter="handleEnter"
                 @focus="handleFocus"
-                @blur="handleBlur">
+                @blur="handleBlur"
+                @change="handleChange">
             <div :class="[prefixCls + '-group-append']" v-if="append" v-show="slotReady" v-el:append><slot name="append"></slot></div>
         </template>
         <textarea
@@ -31,7 +34,8 @@
             v-model="value"
             @keyup.enter="handleEnter"
             @focus="handleFocus"
-            @blur="handleBlur">
+            @blur="handleBlur"
+            @change="handleChange">
         </textarea>
     </div>
 </template>
@@ -52,7 +56,7 @@
             value: {
                 type: [String, Number],
                 default: '',
-                twoWay: true
+//                twoWay: true
             },
             size: {
                 validator (value) {
@@ -85,6 +89,10 @@
             },
             name: {
                 type: String
+            },
+            number: {
+                type: Boolean,
+                default: false
             }
         },
         data () {
@@ -94,7 +102,7 @@
                 append: true,
                 slotReady: false,
                 textareaStyles: {}
-            }        
+            };
         },
         computed: {
             wrapClasses () {
@@ -106,7 +114,7 @@
                         [`${prefixCls}-group`]: this.prepend || this.append,
                         [`${prefixCls}-group-${this.size}`]: (this.prepend || this.append) && !!this.size
                     }
-                ]
+                ];
             },
             inputClasses () {
                 return [
@@ -115,7 +123,7 @@
                         [`${prefixCls}-${this.size}`]: !!this.size,
                         [`${prefixCls}-disabled`]: this.disabled
                     }
-                ]
+                ];
             },
             textareaClasses () {
                 return [
@@ -123,7 +131,7 @@
                     {
                         [`${prefixCls}-disabled`]: this.disabled
                     }
-                ]
+                ];
             }
         },
         methods: {
@@ -138,6 +146,10 @@
             },
             handleBlur () {
                 this.$emit('on-blur');
+                this.$dispatch('on-form-blur', this.value);
+            },
+            handleChange (event) {
+                this.$emit('on-change', event);
             },
             resizeTextarea () {
                 const autosize = this.autosize;
@@ -149,26 +161,29 @@
                 const maxRows = autosize.maxRows;
 
                 this.textareaStyles = calcTextareaHeight(this.$els.textarea, minRows, maxRows);
+            },
+            init () {
+                if (this.type !== 'textarea') {
+                    this.prepend = this.$els.prepend.innerHTML !== '';
+                    this.append = this.$els.append.innerHTML !== '';
+                } else {
+                    this.prepend = false;
+                    this.append = false;
+                }
+                this.slotReady = true;
+                this.resizeTextarea();
             }
         },
         watch: {
-            value (val) {
+            value () {
                 this.$nextTick(() => {
                     this.resizeTextarea();
                 });
-                this.$emit('on-change', val);
+                this.$dispatch('on-form-change', this.value);
             }
         },
-        ready () {
-            if (this.type === 'text') {
-                this.prepend = this.$els.prepend.innerHTML !== '';
-                this.append = this.$els.append.innerHTML !== '';
-            } else {
-                this.prepend = false;
-                this.append = false;
-            }
-            this.slotReady = true;
-            this.resizeTextarea();
+        compiled () {
+            this.$nextTick(() => this.init());
         }
-    }
+    };
 </script>

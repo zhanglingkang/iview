@@ -1,6 +1,6 @@
 <template>
-    <div :class="wrapClasses">
-        <div :class="maskClasses" v-show="visible" @click="mask" transition="fade"></div>
+    <div :class="maskClasses" v-show="visible" @click="mask" transition="fade"></div>
+    <div :class="wrapClasses" @click="handleWrapClick">
         <div :class="classes" :style="styles" v-show="visible" transition="ease">
             <div :class="[prefixCls + '-content']">
                 <a :class="[prefixCls + '-close']" v-if="closable" @click="close">
@@ -24,6 +24,7 @@
     import Icon from '../icon';
     import iButton from '../button/button.vue';
     import { getScrollBarSize } from '../../utils/assist';
+    import { t } from '../../locale';
 
     const prefixCls = 'ivu-modal';
 
@@ -51,11 +52,15 @@
             },
             okText: {
                 type: String,
-                default: '确定'
+                default () {
+                    return t('i.modal.okText');
+                }
             },
             cancelText: {
                 type: String,
-                default: '取消'
+                default () {
+                    return t('i.modal.cancelText');
+                }
             },
             loading: {
                 type: Boolean,
@@ -71,6 +76,10 @@
             footerHide: {
                 type: Boolean,
                 default: false
+            },
+            scrollable: {
+                type: Boolean,
+                default: false
             }
         },
         data () {
@@ -79,7 +88,7 @@
                 wrapShow: false,
                 showHead: true,
                 buttonLoading: false
-            }
+            };
         },
         computed: {
             wrapClasses () {
@@ -89,7 +98,7 @@
                         [`${prefixCls}-hidden`]: !this.wrapShow,
                         [`${this.className}`]: !!this.className
                     }
-                ]
+                ];
             },
             maskClasses () {
                 return `${prefixCls}-mask`;
@@ -104,7 +113,7 @@
                     width: `${this.width}px`
                 };
 
-                const customStyle = !!this.style ? this.style : {};
+                const customStyle = this.style ? this.style : {};
 
                 Object.assign(style, styleWidth, customStyle);
 
@@ -121,6 +130,11 @@
                     this.close();
                 }
             },
+            handleWrapClick (event) {
+                // use indexOf,do not use === ,because ivu-modal-wrap can have other custom className
+                const className = event.target.getAttribute('class');
+                if (className && className.indexOf(`${prefixCls}-wrap`) > -1) this.mask();
+            },
             cancel () {
                 this.close();
             },
@@ -135,7 +149,7 @@
             EscClose (e) {
                 if (this.visible && this.closable) {
                     if (e.keyCode === 27) {
-                        this.close()
+                        this.close();
                     }
                 }
             },
@@ -192,20 +206,30 @@
             visible (val) {
                 if (val === false) {
                     this.buttonLoading = false;
-                    setTimeout(() => {
+                    this.timer = setTimeout(() => {
                         this.wrapShow = false;
                         this.removeScrollEffect();
                     }, 300);
                 } else {
+                    if (this.timer) clearTimeout(this.timer);
                     this.wrapShow = true;
-                    this.addScrollEffect();
+                    if (!this.scrollable) {
+                        this.addScrollEffect();
+                    }
                 }
             },
             loading (val) {
                 if (!val) {
                     this.buttonLoading = false;
                 }
+            },
+            scrollable (val) {
+                if (!val) {
+                    this.addScrollEffect();
+                } else {
+                    this.removeScrollEffect();
+                }
             }
         }
-    }
+    };
 </script>

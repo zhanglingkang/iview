@@ -5,9 +5,11 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import App from './app.vue';
 import iView from '../src/index';
+// import locale from '../src/locale/lang/en-US';
+import locale from '../src/locale/lang/zh-CN';
 
 Vue.use(VueRouter);
-Vue.use(iView);
+Vue.use(iView, { locale });
 
 // 开启debug模式
 Vue.config.debug = true;
@@ -112,7 +114,52 @@ router.map({
         component: function (resolve) {
             require(['./routers/dropdown.vue'], resolve);
         }
-    }
+    },
+    '/tabs': {
+        component: function (resolve) {
+            require(['./routers/tabs.vue'], resolve);
+        }
+    },
+    '/menu': {
+        component: function (resolve) {
+            require(['./routers/menu.vue'], resolve);
+        }
+    },
+    '/date': {
+        component: function (resolve) {
+            require(['./routers/date.vue'], resolve);
+        }
+    },
+    '/form': {
+        component: function (resolve) {
+            require(['./routers/form.vue'], resolve);
+        }
+    },
+    '/carousel': {
+        component: function (resolve) {
+            require(['./routers/carousel.vue'], resolve);
+        }
+    },
+    '/rate': {
+        component: function (resolve) {
+            require(['./routers/rate.vue'], resolve);
+        }
+    },
+    '/upload': {
+        component: function (resolve) {
+            require(['./routers/upload.vue'], resolve);
+        }
+    },
+    '/tree': {
+        component: function (resolve) {
+            require(['./routers/tree.vue'], resolve);
+        }
+    },
+    '/notice': {
+        component: function (resolve) {
+            require(['./routers/notice.vue'], resolve);
+        }
+    },
 });
 
 router.beforeEach(function () {

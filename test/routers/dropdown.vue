@@ -1,6 +1,3 @@
-<style>
-
-</style>
 <template>
     <Dropdown trigger="click">
         <a href="javascript:void(0)">
@@ -8,8 +5,10 @@
             <Icon type="arrow-down-b"></Icon>
         </a>
         <Dropdown-menu slot="list">
+            <Dropdown-item>驴打滚</Dropdown-item>
             <Dropdown-item>炸酱面</Dropdown-item>
-            <Dropdown placement="right-start" trigger="click">
+            <Dropdown-item>豆汁儿</Dropdown-item>
+            <Dropdown placement="right-start">
                 <Dropdown-item>
                     北京烤鸭
                     <Icon type="ios-arrow-right"></Icon>
@@ -26,7 +25,7 @@
 <script>
     export default {
         methods: {
-            click (data) {
+            v (data) {
                 console.log(data)
             }
         }

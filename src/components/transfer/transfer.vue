@@ -38,6 +38,7 @@
 <script>
     import List from './list.vue';
     import Operation from './operation.vue';
+    import { t } from '../../locale';
 
     const prefixCls = 'ivu-transfer';
 
@@ -47,7 +48,7 @@
             data: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             renderFormat: {
@@ -59,31 +60,31 @@
             targetKeys: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             selectedKeys: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             listStyle: {
                 type: Object,
                 default () {
-                    return {}
+                    return {};
                 }
             },
             titles: {
                 type: Array,
                 default () {
-                    return ['源列表', '目的列表']
+                    return [t('i.transfer.titles.source'), t('i.transfer.titles.target')];
                 }
             },
             operations: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             filterable: {
@@ -92,7 +93,9 @@
             },
             filterPlaceholder: {
                 type: String,
-                default: '请输入搜索内容'
+                default () {
+                    return t('i.transfer.filterPlaceholder');
+                }
             },
             filterMethod: {
                 type: Function,
@@ -103,7 +106,9 @@
             },
             notFoundText: {
                 type: String,
-                default: '列表为空'
+                default () {
+                    return t('i.transfer.notFoundText');
+                }
             }
         },
         data () {
@@ -113,13 +118,13 @@
                 rightData: [],
                 leftCheckedKeys: [],
                 rightCheckedKeys: []
-            }
+            };
         },
         computed: {
             classes () {
                 return [
                     `${prefixCls}`
-                ]
+                ];
             },
             leftValidKeysCount () {
                 return this.getValidKeys('left').length;
@@ -172,6 +177,7 @@
 
                 this.$refs[opposite].toggleSelectAll(false);
                 this.$emit('on-change', newTargetKeys, direction, moveKeys);
+                this.$dispatch('on-form-change', newTargetKeys, direction, moveKeys);
             }
         },
         watch: {
@@ -182,5 +188,5 @@
         created () {
             this.splitData(true);
         }
-    }
+    };
 </script>

@@ -18,7 +18,7 @@
                     :class="[prefixCls + '-button-wrap']"
                     :style="{left: firstPosition + '%'}"
                     @mousedown="onFirstButtonDown">
-                    <Tooltip :controlled="firstDragging" placement="top" :content="tipFormat(value[0])" :disabled="tipFormat(value[0]) === null" v-ref:tooltip>
+                    <Tooltip :controlled="firstDragging" placement="top" :content="tipFormat(value[0])" :disabled="tipDisabled" :always="showTip === 'always'" v-ref:tooltip>
                         <div :class="button1Classes"></div>
                     </Tooltip>
                 </div>
@@ -26,7 +26,7 @@
                     :class="[prefixCls + '-button-wrap']"
                     :style="{left: secondPosition + '%'}"
                     @mousedown="onSecondButtonDown">
-                    <Tooltip :controlled="secondDragging" placement="top" :content="tipFormat(value[1])" :disabled="tipFormat(value[1]) === null" v-ref:tooltip2>
+                    <Tooltip :controlled="secondDragging" placement="top" :content="tipFormat(value[1])" :disabled="tipDisabled" :always="showTip === 'always'" v-ref:tooltip2>
                         <div :class="button2Classes"></div>
                     </Tooltip>
                 </div>
@@ -36,7 +36,7 @@
                     :class="[prefixCls + '-button-wrap']"
                     :style="{left: singlePosition + '%'}"
                     @mousedown="onSingleButtonDown">
-                    <Tooltip :controlled="dragging" placement="top" :content="tipFormat(value)" :disabled="tipFormat(value) === null" v-ref:tooltip>
+                    <Tooltip :controlled="dragging" placement="top" :content="tipFormat(value)" :disabled="tipDisabled" :always="showTip === 'always'" v-ref:tooltip>
                         <div :class="buttonClasses"></div>
                     </Tooltip>
                 </div>
@@ -47,7 +47,7 @@
 <script>
     import InputNumber from '../../components/input-number/input-number.vue';
     import Tooltip from '../../components/tooltip/tooltip.vue';
-    import { getStyle } from '../../utils/assist';
+    import { getStyle, oneOf } from '../../utils/assist';
 
     const prefixCls = 'ivu-slider';
 
@@ -91,6 +91,13 @@
                 default (val) {
                     return val;
                 }
+            },
+            showTip: {
+                type: String,
+                default: 'hover',
+                validator (value) {
+                    return oneOf(value, ['hover', 'always', 'never']);
+                }
             }
         },
         data () {
@@ -109,7 +116,7 @@
                 singlePosition: (this.value - this.min) / (this.max - this.min) * 100,
                 firstPosition: (this.value[0] - this.min) / (this.max - this.min) * 100,
                 secondPosition: (this.value[1] - this.min) / (this.max - this.min) * 100
-            }
+            };
         },
         computed: {
             classes () {
@@ -120,7 +127,7 @@
                         [`${prefixCls}-range`]: this.range,
                         [`${prefixCls}-disabled`]: this.disabled
                     }
-                ]
+                ];
             },
             buttonClasses () {
                 return [
@@ -153,11 +160,11 @@
                     style = {
                         width: (this.value[1] - this.value[0]) / (this.max - this.min) * 100 + '%',
                         left: (this.value[0] - this.min) / (this.max - this.min) * 100 + '%'
-                    }
+                    };
                 } else {
                     style = {
                         width: (this.value - this.min) / (this.max - this.min) * 100 + '%'
-                    }
+                    };
                 }
 
                 return style;
@@ -173,6 +180,9 @@
             },
             sliderWidth () {
                 return parseInt(getStyle(this.$els.slider, 'width'), 10);
+            },
+            tipDisabled () {
+                return this.tipFormat(this.value[0]) === null || this.showTip === 'never';
             }
         },
         watch: {
@@ -184,6 +194,7 @@
                     }
                 });
                 this.updateValue(val);
+                this.$emit('on-input', this.value);
             }
         },
         methods: {
@@ -291,6 +302,7 @@
                     if (!this.dragging) {
                         if (this.value !== this.oldSingleValue) {
                             this.$emit('on-change', this.value);
+                            this.$dispatch('on-form-change', this.value);
                             this.oldSingleValue = this.value;
                         }
                     }
@@ -303,6 +315,7 @@
                 this.value = val;
                 this.setSinglePosition(val);
                 this.$emit('on-change', this.value);
+                this.$dispatch('on-form-change', this.value);
             },
             // for range use first
             onFirstButtonDown (event) {
@@ -345,6 +358,7 @@
                     if (!this.firstDragging) {
                         if (this.value[0] !== this.oldFirstValue) {
                             this.$emit('on-change', this.value);
+                            this.$dispatch('on-form-change', this.value);
                             this.oldFirstValue = this.value[0];
                         }
                     }
@@ -394,6 +408,7 @@
                     if (!this.secondDragging) {
                         if (this.value[1] !== this.oldSecondValue) {
                             this.$emit('on-change', this.value);
+                            this.$dispatch('on-form-change', this.value);
                             this.oldSecondValue = this.value[1];
                         }
                     }
@@ -418,5 +433,5 @@
                 this.updateValue(this.value);
             }
         }
-    }
+    };
 </script>

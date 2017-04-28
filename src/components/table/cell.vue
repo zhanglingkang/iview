@@ -2,7 +2,7 @@
     <div :class="classes">
         <template v-if="renderType === 'index'">{{naturalIndex + 1}}</template>
         <template v-if="renderType === 'selection'">
-            <Checkbox :checked="checked" @on-change="toggleSelect"></Checkbox>
+            <Checkbox :checked="checked" @on-change="toggleSelect" :disabled="disabled"></Checkbox>
         </template>
         <template v-if="renderType === 'normal'">{{{ row[column.key] }}}</template>
     </div>
@@ -19,6 +19,7 @@
             naturalIndex: Number,    // index of rebuildData
             index: Number,           // _index of data
             checked: Boolean,
+            disabled: Boolean,
             fixed: {
                 type: [Boolean, String],
                 default: false
@@ -29,16 +30,17 @@
                 renderType: '',
                 uid: -1,
                 content: this.$parent.$parent.content
-            }
+            };
         },
         computed: {
             classes () {
                 return [
                     `${this.prefixCls}-cell`,
                     {
-                        [`${this.prefixCls}-hidden`]: !this.fixed && this.column.fixed && (this.column.fixed === 'left' || this.column.fixed === 'right')
+                        [`${this.prefixCls}-hidden`]: !this.fixed && this.column.fixed && (this.column.fixed === 'left' || this.column.fixed === 'right'),
+                        [`${this.prefixCls}-cell-ellipsis`]: this.column.ellipsis || false
                     }
-                ]
+                ];
             }
         },
         methods: {
@@ -49,7 +51,7 @@
                     const cell = document.createElement('div');
                     cell.innerHTML = template;
                     const _oldParentChildLen = $parent.$children.length;
-                    $parent.$compile(cell);
+                    $parent.$compile(cell);    // todo 这里无法触发 ready 钩子
                     const _newParentChildLen = $parent.$children.length;
 
                     if (_oldParentChildLen !== _newParentChildLen) {    // if render normal html node, do not tag
@@ -94,5 +96,5 @@
                 this.compile();
             }
         }
-    }
+    };
 </script>

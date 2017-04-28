@@ -4,10 +4,7 @@
         v-clickoutside="handleClose"
         @mouseenter="handleMouseenter"
         @mouseleave="handleMouseleave">
-        <div
-            :class="[prefixCls-rel]"
-            v-el:reference
-            @click="handleClick"><slot></slot></div>
+        <div :class="[prefixCls-rel]" v-el:reference @click="handleClick"><slot></slot></div>
         <Drop v-show="visible" :placement="placement" :transition="transition" v-ref:drop><slot name="list"></slot></Drop>
     </div>
 </template>
@@ -25,7 +22,7 @@
         props: {
             trigger: {
                 validator (value) {
-                    return oneOf(value, ['click', 'hover']);
+                    return oneOf(value, ['click', 'hover', 'custom']);
                 },
                 default: 'hover'
             },
@@ -34,6 +31,10 @@
                     return oneOf(value, ['top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left', 'left-start', 'left-end', 'right', 'right-start', 'right-end']);
                 },
                 default: 'bottom'
+            },
+            visible: {
+                type: Boolean,
+                default: false
             }
         },
         computed: {
@@ -43,18 +44,19 @@
         },
         data () {
             return {
-                prefixCls: prefixCls,
-                visible: false
-            }
+                prefixCls: prefixCls
+            };
         },
         methods: {
             handleClick () {
+                if (this.trigger === 'custom') return false;
                 if (this.trigger !== 'click') {
                     return false;
                 }
                 this.visible = !this.visible;
             },
             handleMouseenter () {
+                if (this.trigger === 'custom') return false;
                 if (this.trigger !== 'hover') {
                     return false;
                 }
@@ -64,6 +66,7 @@
                 }, 250);
             },
             handleMouseleave () {
+                if (this.trigger === 'custom') return false;
                 if (this.trigger !== 'hover') {
                     return false;
                 }
@@ -73,6 +76,7 @@
                 }, 150);
             },
             handleClose () {
+                if (this.trigger === 'custom') return false;
                 if (this.trigger !== 'click') {
                     return false;
                 }
@@ -94,6 +98,7 @@
                 } else {
                     this.$refs.drop.destroy();
                 }
+                this.$emit('on-visible-change', val);
             }
         },
         events: {
@@ -105,22 +110,25 @@
                 const $parent = this.hasParent();
                 if ($parent) {
                     this.$nextTick(() => {
+                        if (this.trigger === 'custom') return false;
                         this.visible = false;
                     });
                     $parent.$emit('on-hover-click');
                 } else {
                     this.$nextTick(() => {
+                        if (this.trigger === 'custom') return false;
                         this.visible = false;
                     });
                 }
             },
             'on-haschild-click' () {
                 this.$nextTick(() => {
+                    if (this.trigger === 'custom') return false;
                     this.visible = true;
                 });
                 const $parent = this.hasParent();
                 if ($parent) $parent.$emit('on-haschild-click');
             }
         }
-    }
+    };
 </script>

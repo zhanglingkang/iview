@@ -8,6 +8,7 @@
     </div>
 </template>
 <script>
+    import { scrollTop } from '../../utils/assist';
     const prefixCls = 'ivu-back-top';
 
     export default {
@@ -23,12 +24,16 @@
             right: {
                 type: Number,
                 default: 30
+            },
+            duration: {
+                type: Number,
+                default: 1000
             }
         },
         data () {
             return {
                 backTop: false
-            }
+            };
         },
         ready () {
             window.addEventListener('scroll', this.handleScroll, false);
@@ -45,13 +50,13 @@
                     {
                         [`${prefixCls}-show`]: this.backTop
                     }
-                ]
+                ];
             },
             styles () {
                 return {
                     bottom: `${this.bottom}px`,
                     right: `${this.right}px`
-                }
+                };
             },
             innerClasses () {
                 return `${prefixCls}-inner`;
@@ -62,9 +67,9 @@
                 this.backTop = window.pageYOffset >= this.height;
             },
             back () {
-                window.scrollTo(0, 0);
+                scrollTop(window, document.body.scrollTop, 0, this.duration);
                 this.$emit('on-click');
             }
         }
-    }
+    };
 </script>

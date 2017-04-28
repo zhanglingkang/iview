@@ -11,7 +11,8 @@
                     :columns-width="columnsWidth"
                     :data="rebuildData"></table-head>
             </div>
-            <div :class="[prefixCls + '-body']" :style="bodyStyle" v-el:body @scroll="handleBodyScroll">
+            <div :class="[prefixCls + '-body']" :style="bodyStyle" v-el:body @scroll="handleBodyScroll"
+                v-show="!((!!noDataText && (!data || data.length === 0)) || (!!noFilteredDataText && (!rebuildData || rebuildData.length === 0)))">
                 <table-body
                     v-ref:tbody
                     :prefix-cls="prefixCls"
@@ -20,6 +21,19 @@
                     :data="rebuildData"
                     :columns-width="columnsWidth"
                     :obj-data="objData"></table-body>
+            </div>
+            <div
+                :class="[prefixCls + '-tip']"
+                v-else>
+                <table cellspacing="0" cellpadding="0" border="0">
+                    <tbody>
+                        <tr>
+                            <td :style="{ 'height': bodyStyle.height }">
+                              {{{!data || data.length === 0 ? noDataText : noFilteredDataText}}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             <div :class="[prefixCls + '-fixed']" :style="fixedTableStyle" v-if="isLeftFixed">
                 <div :class="[prefixCls + '-fixed-header']" v-if="showHeader">
@@ -72,7 +86,10 @@
 <script>
     import tableHead from './table-head.vue';
     import tableBody from './table-body.vue';
-    import { oneOf, getStyle, deepCopy } from '../../utils/assist';
+    import { oneOf, getStyle, deepCopy, getScrollBarSize } from '../../utils/assist';
+    import { t } from '../../locale';
+    import Csv from '../../utils/csv';
+    import ExportCsv from './export-csv';
     const prefixCls = 'ivu-table';
 
     export default {
@@ -81,13 +98,13 @@
             data: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             columns: {
                 type: Array,
                 default () {
-                    return []
+                    return [];
                 }
             },
             size: {
@@ -125,6 +142,18 @@
             },
             content: {
                 type: Object
+            },
+            noDataText: {
+                type: String,
+                default () {
+                    return t('i.table.noDataText');
+                }
+            },
+            noFilteredDataText: {
+                type: String,
+                default () {
+                    return t('i.table.noFilteredDataText');
+                }
             }
         },
         data () {
@@ -139,8 +168,10 @@
                 cloneColumns: this.makeColumns(),
                 showSlotHeader: true,
                 showSlotFooter: true,
-                bodyHeight: 0
-            }
+                bodyHeight: 0,
+                bodyRealHeight: 0,
+                scrollBarWidth: getScrollBarSize()
+            };
         },
         computed: {
             wrapClasses () {
@@ -151,7 +182,7 @@
                         [`${prefixCls}-with-header`]: this.showSlotHeader,
                         [`${prefixCls}-with-footer`]: this.showSlotFooter
                     }
-                ]
+                ];
             },
             classes () {
                 return [
@@ -162,17 +193,33 @@
                         [`${prefixCls}-stripe`]: this.stripe,
                         [`${prefixCls}-with-fixed-top`]: !!this.height
                     }
-                ]
+                ];
             },
             styles () {
                 let style = {};
-                if (!!this.height) style.height = `${this.height}px`;
-                if (!!this.width) style.width = `${this.width}px`;
+                if (this.height) {
+                    const height = (this.isLeftFixed || this.isRightFixed) ? parseInt(this.height) + this.scrollBarWidth : parseInt(this.height);
+                    style.height = `${height}px`;
+                }
+                if (this.width) style.width = `${this.width}px`;
                 return style;
             },
             tableStyle () {
                 let style = {};
-                if (this.tableWidth !== 0) style.width = `${this.tableWidth}px`;
+                if (this.tableWidth !== 0) {
+                    let width = '';
+                    if (this.bodyHeight === 0) {
+                        width = this.tableWidth;
+                    } else {
+                        if (this.bodyHeight > this.bodyRealHeight) {
+                            width = this.tableWidth;
+                        } else {
+                            width = this.tableWidth - this.scrollBarWidth;
+                        }
+                    }
+//                    const width = this.bodyHeight === 0 ? this.tableWidth : this.tableWidth - this.scrollBarWidth;
+                    style.width = `${width}px`;
+                }
                 return style;
             },
             fixedTableStyle () {
@@ -190,17 +237,30 @@
                 this.rightFixedColumns.forEach((col) => {
                     if (col.fixed && col.fixed === 'right') width += col._width;
                 });
+                width += this.scrollBarWidth;
                 style.width = `${width}px`;
                 return style;
             },
             bodyStyle () {
                 let style = {};
-                if (this.bodyHeight !== 0) style.height = `${this.bodyHeight}px`;
+                if (this.bodyHeight !== 0) {
+                    // add a height to resolve scroll bug when browser has a scrollBar in fixed type and height prop
+                    const height = (this.isLeftFixed || this.isRightFixed) ? this.bodyHeight + this.scrollBarWidth : this.bodyHeight;
+                    style.height = `${height}px`;
+                }
                 return style;
             },
             fixedBodyStyle () {
                 let style = {};
-                if (this.bodyHeight !== 0) style.height = `${this.bodyHeight - 1}px`;
+                if (this.bodyHeight !== 0) {
+                    let height = this.bodyHeight + this.scrollBarWidth - 1;
+
+                    if (this.width && this.width < this.tableWidth){
+                        height = this.bodyHeight;
+                    }
+//                    style.height = this.scrollBarWidth > 0 ? `${this.bodyHeight}px` : `${this.bodyHeight - 1}px`;
+                    style.height = this.scrollBarWidth > 0 ? `${height}px` : `${height - 1}px`;
+                }
                 return style;
             },
             leftFixedColumns () {
@@ -267,11 +327,13 @@
 
                                 columnsWidth[column._index] = {
                                     width: width
-                                }
+                                };
                             }
                             this.columnsWidth = columnsWidth;
                         }
                     });
+                    // get table real height,for fixed when set height prop,but height < table's height,show scrollBarWidth
+                    this.bodyRealHeight = parseInt(getStyle(this.$refs.tbody.$el, 'height'));
                 });
             },
             handleMouseIn (_index) {
@@ -295,6 +357,14 @@
                 const oldData = oldIndex < 0 ? null : JSON.parse(JSON.stringify(this.data[oldIndex]));
                 this.$emit('on-current-change', JSON.parse(JSON.stringify(this.data[_index])), oldData);
             },
+            clickCurrentRow (_index) {
+                this.highlightCurrentRow (_index);
+                this.$emit('on-row-click', JSON.parse(JSON.stringify(this.data[_index])));
+            },
+            dblclickCurrentRow (_index) {
+                this.highlightCurrentRow (_index);
+                this.$emit('on-row-dblclick', JSON.parse(JSON.stringify(this.data[_index])));
+            },
             getSelection () {
                 let selectionIndexes = [];
                 for (let i in this.objData) {
@@ -304,12 +374,10 @@
             },
             toggleSelect (_index) {
                 let data = {};
-                let index = -1;
 
                 for (let i in this.objData) {
                     if (parseInt(i) === _index) {
                         data = this.objData[i];
-                        index = i;
                     }
                 }
                 const status = !data._isChecked;
@@ -323,10 +391,21 @@
                 this.$emit('on-selection-change', selection);
             },
             selectAll (status) {
-                this.rebuildData.forEach((data) => {
-                    this.objData[data._index]._isChecked = status;
-                });
-
+                // this.rebuildData.forEach((data) => {
+                //     if(this.objData[data._index]._isDisabled){
+                //         this.objData[data._index]._isChecked = false;
+                //     }else{
+                //         this.objData[data._index]._isChecked = status;
+                //     }
+                    
+                // });
+                for(const data of this.rebuildData){
+                    if(this.objData[data._index]._isDisabled){
+                        continue;
+                    }else{
+                        this.objData[data._index]._isChecked = status;
+                    }
+                }
                 const selection = this.getSelection();
                 if (status) {
                     this.$emit('on-select-all', selection);
@@ -334,13 +413,13 @@
                 this.$emit('on-selection-change', selection);
             },
             fixedHeader () {
-                if (!!this.height) {
+                if (this.height) {
                     this.$nextTick(() => {
                         const titleHeight = parseInt(getStyle(this.$els.title, 'height')) || 0;
                         const headerHeight = parseInt(getStyle(this.$els.header, 'height')) || 0;
                         const footerHeight = parseInt(getStyle(this.$els.footer, 'height')) || 0;
                         this.bodyHeight = this.height - titleHeight - headerHeight - footerHeight;
-                    })
+                    });
                 } else {
                     this.bodyHeight = 0;
                 }
@@ -368,7 +447,7 @@
                 const key = this.cloneColumns[index].key;
                 data.sort((a, b) => {
                     if (this.cloneColumns[index].sortMethod) {
-                        return this.cloneColumns[index].sortMethod(a, b);
+                        return this.cloneColumns[index].sortMethod(a[key], b[key], type);
                     } else {
                         if (type === 'asc') {
                             return a[key] > b[key] ? 1 : -1;
@@ -452,14 +531,17 @@
                 let data = this.makeData();
                 let sortType = 'normal';
                 let sortIndex = -1;
+                let isCustom = false;
+
                 for (let i = 0; i < this.cloneColumns.length; i++) {
                     if (this.cloneColumns[i]._sortType !== 'normal') {
                         sortType = this.cloneColumns[i]._sortType;
                         sortIndex = i;
+                        isCustom = this.cloneColumns[i].sortable === 'custom';
                         break;
                     }
                 }
-                if (sortType !== 'normal') data =  this.sortData(data, sortType, sortIndex);
+                if (sortType !== 'normal' && !isCustom) data =  this.sortData(data, sortType, sortIndex);
                 return data;
             },
             makeDataWithFilter () {
@@ -477,8 +559,21 @@
                 this.data.forEach((row, index) => {
                     const newRow = deepCopy(row);// todo 直接替换
                     newRow._isHover = false;
-                    newRow._isChecked = false;
-                    newRow._isHighlight = false;
+                    if(newRow._disabled){
+                        newRow._isDisabled = newRow._disabled;
+                    }else{
+                        newRow._isDisabled = false;
+                    }
+                    if (newRow._checked) {
+                        newRow._isChecked = newRow._checked;
+                    } else {
+                        newRow._isChecked = false;
+                    }
+                    if (newRow._highlight) {
+                        newRow._isHighlight = newRow._highlight;
+                    } else {
+                        newRow._isHighlight = false;
+                    }
                     data[index] = newRow;
                 });
                 return data;
@@ -516,6 +611,32 @@
                     }
                 });
                 return left.concat(center).concat(right);
+            },
+            exportCsv (params) {
+                if (params.filename) {
+                    if (params.filename.indexOf('.csv') === -1) {
+                        params.filename += '.csv';
+                    }
+                } else {
+                    params.filename = 'table.csv';
+                }
+
+                let columns = [];
+                let datas = [];
+                if (params.columns && params.data) {
+                    columns = params.columns;
+                    datas = params.data;
+                } else {
+                    columns = this.columns;
+                    if (!('original' in params)) params.original = true;
+                    datas = params.original ? this.data : this.rebuildData;
+                }
+
+                let noHeader = false;
+                if ('noHeader' in params) noHeader = params.noHeader;
+
+                const data = Csv(columns, datas, ',', noHeader);
+                ExportCsv.download(params.filename, data);
             }
         },
         compiled () {
@@ -555,5 +676,5 @@
                 this.fixedHeader();
             }
         }
-    }
+    };
 </script>

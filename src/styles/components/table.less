@@ -72,7 +72,7 @@
     }
     &-body{
         overflow: auto;
-        position: relative;
+        //position: relative;
     }
 
     &-with-fixed-top&-with-footer{
@@ -138,6 +138,13 @@
         white-space: normal;
         word-break: break-all;
         box-sizing: border-box;
+
+        &-ellipsis {
+            word-break: keep-all;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     }
     &-hidden{
         visibility: hidden;
@@ -293,9 +300,20 @@
     .ivu-poptip-popper{
         min-width: 0;
         text-align: left;
-
+    }
+    thead .ivu-poptip-popper{
         .ivu-poptip-body{
             padding: 0;
+        }
+    }
+
+    &-tip {
+        table {
+            width: 100%;
+
+            td {
+              text-align: center;
+            }
         }
     }
 }
